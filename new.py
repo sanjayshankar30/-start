@@ -1,6 +1,6 @@
 from playwright.sync_api import sync_playwright
 import time
-
+ 
 def main():
     url = "https://www.business-standard.com/markets/research-report"
 
