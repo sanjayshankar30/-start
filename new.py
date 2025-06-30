@@ -14,7 +14,7 @@ def main():
 
         # Wait for table to appear - try with general selector
         try:
-            page.wait_for_selector("table tbody tr", timeout=30000)
+            page.wait_for_selector("table tbody tr", timeout=150000)
         except:
             print("❌ Table not found within timeout.")
             page.screenshot(path="debug.png", full_page=True)
