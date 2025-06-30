@@ -1,17 +1,14 @@
-name: Run Playwright Scraper
+name: Scrape Business Standard
 
 on:
-  workflow_dispatch:  # Allows you to run manually from GitHub
-  push:
-    branches:
-      - main  # Or any branch you use
+  workflow_dispatch:  # Allows manual trigger
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Python
@@ -19,11 +16,19 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Python dependencies
+      - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          playwright install
+          pip install playwright
+          playwright install chromium
 
       - name: Run scraper
-        run: python new.py
+        run: python your_script.py
+
+      - name: Upload Debug Files (if any)
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: debug-files
+          path: |
+            debug.html
+            debug.png
