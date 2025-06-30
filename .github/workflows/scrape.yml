@@ -26,4 +26,4 @@ jobs:
           playwright install chromium
 
       - name: Run scraper
-        run: python your_script_name.py
+        run: new.py
