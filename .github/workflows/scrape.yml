@@ -3,7 +3,7 @@ name: Scrape Moneycontrol
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 * * * *"  # every hour
+    - cron: "0 * * * *"  # Every hour
 
 jobs:
   run-scraper:
@@ -26,4 +26,5 @@ jobs:
           playwright install chromium
 
       - name: Run scraper
-        run: python new.py  # ✅ FIXED LINE
+        run: python new.py  # 👈 replace `new.py` if your file has a different name
+
