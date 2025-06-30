@@ -1,0 +1,7 @@
+      - name: Install dependencies
+        run: |
+          pip install playwright
+          playwright install
+
+      - name: Run script
+        run: python scrape.py
