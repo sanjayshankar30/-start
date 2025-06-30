@@ -5,7 +5,7 @@ def main():
     url = "https://www.business-standard.com/markets/research-report"
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)  # Set to True for GitHub Actions
+        browser = p.chromium.launch(headless=True)  # Set to True for GitHub Actions
         page = browser.new_page()
         page.goto(url, timeout=60000)
 
