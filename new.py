@@ -60,14 +60,15 @@ def scrape_business_standard():
                 tds = tr.query_selector_all("td")
                 if len(tds) >= 5:
                     rows.append([td.inner_text().strip() for td in tds[:5]])
-
+                    print(rows)
+'''
             if rows:
                 google_sheets.update_google_sheet_by_name(SHEET_ID, WORKSHEET_NAME, headers, rows)
                 ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 google_sheets.append_footer(SHEET_ID, WORKSHEET_NAME, ["Last updated on:", ts])
                 print(f"✅ Successfully updated {len(rows)} rows.")
             else:
-                print("⚠️ Table found but no rows extracted.")
+                print("⚠️ Table found but no rows extracted.")'''
 
             browser.close()
 
