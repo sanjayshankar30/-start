@@ -26,5 +26,4 @@ jobs:
           playwright install chromium
 
       - name: Run scraper
-        run: python new.py  # ✅ Now points to your actual file!
-
+        run: python new.py  # ✅ FIXED LINE
