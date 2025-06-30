@@ -26,4 +26,4 @@ jobs:
           playwright install
 
       - name: Run scraper
-        run: python scrape.py
+        run: python new.py
