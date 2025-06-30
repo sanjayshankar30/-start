@@ -1,68 +1,60 @@
-from datetime import datetime
 from playwright.sync_api import sync_playwright
+import google_sheets
+from datetime import datetime
+import os
 
-URL = "https://www.business-standard.com/markets/research-report"
+URL = "https://www.moneycontrol.com/markets/stock-ideas"
+SHEET_ID = "1QN5GMlxBKMudeHeWF-Kzt9XsqTt01am7vze1wBjvIdE"
+WORKSHEET_NAME = "mons"
 
-def scrape_business_standard():
-    print("🚀 Starting the scraping process...")
+def scrape_moneycontrol():
+    print("🔄 Starting the scraping process...")
 
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled"])  # Set to True in CI/GitHub
-            context = browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                viewport={"width": 1280, "height": 800},
-                locale="en-US"
-            )
-            page = context.new_page()
+            headless = os.getenv("GITHUB_ACTIONS") == "true"
+            browser = p.chromium.launch(headless=headless)
+            page = browser.new_page()
 
-            # Manual stealth patch
-            page.add_init_script("""
-                Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-                window.navigator.chrome = { runtime: {} };
-                Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-                Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-            """)
+            print("🌐 Navigating to the Stock Ideas page...")
+            page.goto(URL, wait_until="domcontentloaded", timeout=60000)
+            page.wait_for_timeout(7000)
 
-            page.goto(URL, timeout=60000)
-            print("🌐 Page requested. Waiting fixed time for content...")
-            page.wait_for_timeout(10_000)  # 10 seconds fixed wait
+            cards = page.query_selector_all("div.InfoCardsSec_web_stckCard__X8CAV")
+            print(f"✅ Found {len(cards)} cards.")
 
-            # ✅ Wait for the table to appear
-            try:
-                page.wait_for_selector("table tbody tr", timeout=30000)
+            headers = ["Date", "Name", "Action", "Target", "Current Return", "Reco Price", "Research"]
+            rows = []
 
-            except:
-                print("❌ Table not found within timeout.")
-                page.screenshot(path="debug.png", full_page=True)
-                with open("debug.html", "w", encoding="utf-8") as f:
-                    f.write(page.content())
-                browser.close()
-                return
+            for card in cards:
+                try:
+                    date = name = action = target = current_return = reco_price = research = "N/A"
 
-            trs = page.query_selector_all("table tbody tr")
+                    if (el := card.query_selector("p.InfoCardsSec_web_recoTxt___V6m0 span")): date = el.inner_text().strip()
+                    if (el := card.query_selector("h3 a")): name = el.inner_text().strip()
+                    if (el := card.query_selector("div.InfoCardsSec_web_buy__0pluJ")): action = el.inner_text().strip()
+                    if (el := card.query_selector("ul li:nth-child(1) span")): reco_price = el.inner_text().strip()
+                    if (el := card.query_selector("ul li:nth-child(2) span")): target = el.inner_text().strip()
+                    if (el := card.query_selector("ul li:nth-child(3) span")): current_return = el.inner_text().strip()
+                    if (el := card.query_selector("a.InfoCardsSec_web_pdfBtn__LQ71I p")): research = el.inner_text().strip()
 
-            if not trs:
-                print("⚠️ No table rows found. Saving screenshot...")
-                page.screenshot(path="final_debug.png")
-                print("📸 Saved final_debug.png. Check it.")
-                browser.close()
-                return
+                    row = [date, name, action, target, current_return, reco_price, research]
+                    if any(f != "N/A" for f in row):
+                        rows.append(row)
 
-            headers = ["STOCK", "RECOMMENDATION", "TARGET", "BROKER", "DATE"]
-            print("📋", "\t".join(headers))
+                except Exception as card_err:
+                    print(f"⚠️ Failed to parse a card: {card_err}")
 
-            for tr in trs[:500]:
-                tds = tr.query_selector_all("td")
-                if len(tds) >= 5:
-                    row = [td.inner_text().strip() for td in tds[:5]]
-                    print("➡️", "\t".join(row))
+            print(f"📝 Prepared {len(rows)} rows for Google Sheets.")
+
+            google_sheets.update_google_sheet_by_name(SHEET_ID, WORKSHEET_NAME, headers, rows)
+            ts = datetime.now().strftime("Last updated: %Y-%m-%d %H:%M:%S")
+            google_sheets.append_footer(SHEET_ID, WORKSHEET_NAME, [ts])
 
             browser.close()
 
     except Exception as e:
-        print(f"❌ Fatal error: {e}")
+        print(f"❌ Error occurred: {e}")
 
-scrape_business_standard()
-
+scrape_moneycontrol()
 
