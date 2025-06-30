@@ -1,17 +1,14 @@
 from datetime import datetime
 from playwright.sync_api import sync_playwright
-import google_sheets
 
 URL = "https://www.business-standard.com/markets/research-report"
-SHEET_ID = "1QN5GMlxBKMudeHeWF-Kzt9XsqTt01am7vze1wBjvIdE"
-WORKSHEET_NAME = "bis"
 
 def scrape_business_standard():
     print("🚀 Starting the scraping process...")
 
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=False)  # You can set True later for GitHub
+            browser = p.chromium.launch(headless=False)  # Set to True in CI/GitHub
             context = browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 viewport={"width": 1280, "height": 800},
@@ -21,19 +18,17 @@ def scrape_business_standard():
 
             # Manual stealth patch
             page.add_init_script("""
-            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-            window.navigator.chrome = { runtime: {} };
-            Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-            Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+                Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+                window.navigator.chrome = { runtime: {} };
+                Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+                Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
             """)
 
             page.goto(URL, timeout=60000)
-            
             print("🌐 Page requested. Waiting fixed time for content...")
             page.wait_for_timeout(10_000)  # 10 seconds fixed wait
 
-            
-# ✅ Try waiting for the table to appear
+            # ✅ Wait for the table to appear
             try:
                 page.wait_for_selector("table.cmpnydatatable_cmpnydatatable__Cnf6M tbody tr", timeout=30000)
             except:
@@ -42,7 +37,7 @@ def scrape_business_standard():
                 with open("debug.html", "w", encoding="utf-8") as f:
                     f.write(page.content())
                 browser.close()
-                eturn
+                return
 
             trs = page.query_selector_all("table.cmpnydatatable_cmpnydatatable__Cnf6M tbody tr")
 
@@ -54,21 +49,13 @@ def scrape_business_standard():
                 return
 
             headers = ["STOCK", "RECOMMENDATION", "TARGET", "BROKER", "DATE"]
-            rows = []
+            print("📋", "\t".join(headers))
 
             for tr in trs[:500]:
                 tds = tr.query_selector_all("td")
                 if len(tds) >= 5:
-                    rows.append([td.inner_text().strip() for td in tds[:5]])
-                    print(rows)
-'''
-            if rows:
-                google_sheets.update_google_sheet_by_name(SHEET_ID, WORKSHEET_NAME, headers, rows)
-                ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                google_sheets.append_footer(SHEET_ID, WORKSHEET_NAME, ["Last updated on:", ts])
-                print(f"✅ Successfully updated {len(rows)} rows.")
-            else:
-                print("⚠️ Table found but no rows extracted.")'''
+                    row = [td.inner_text().strip() for td in tds[:5]]
+                    print("➡️", "\t".join(row))
 
             browser.close()
 
@@ -76,4 +63,5 @@ def scrape_business_standard():
         print(f"❌ Fatal error: {e}")
 
 scrape_business_standard()
+
 
