@@ -27,12 +27,3 @@ jobs:
 
       - name: Run scraper
         run: python scrape.py
-
-      - name: Upload Debug Artifacts (if needed)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: debug-files
-          path: |
-            *.html
-            *.png
