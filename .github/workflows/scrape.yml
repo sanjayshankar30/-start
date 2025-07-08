@@ -26,5 +26,5 @@ jobs:
           playwright install chromium
 
       - name: Run scraper
-        run: python namma dha.py  # 👈 replace `new.py` if your file has a different name
+        run: python nd.py  # 👈 replace `new.py` if your file has a different name
 
