@@ -26,7 +26,7 @@ jobs:
       run: |
         python -m playwright install
 
-    - name: nammadha Scraper
+    - name: Run Scraper
       env:
-        HEADLESS_MODE: true  # Set to true for headless mode
-      run: python n.py
+        HEADLESS_MODE: true  # Ensure this is set to true
+      run: python main.py
