@@ -25,6 +25,11 @@ jobs:
     - name: Install Playwright Browsers
       run: |
         python -m playwright install
+    - name: Set up Xvfb
+      run: |
+        sudo apt-get install -y xvfb
+        Xvfb :99 -screen 0 1280x1024x24 &
+        export DISPLAY=:99
 
     - name: Run Scraper
       env:
