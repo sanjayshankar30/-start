@@ -10,7 +10,7 @@ WORKSHEET_NAME = "bis"
 def scrape_business_standard():
     print("🚀 Starting the scraping process...")
 
-    headless_mode = os.getenv("HEADLESS_MODE", "True") == "True"
+    headless_mode = os.getenv("HEADLESS_MODE", "False") == "False"
 
     try:
         with sync_playwright() as p:
