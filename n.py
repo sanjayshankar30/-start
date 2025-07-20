@@ -10,11 +10,13 @@ WORKSHEET_NAME = "bis"
 def scrape_business_standard():
     print("🚀 Starting the scraping process...")
 
+    # Set headless mode based on environment variable
     headless_mode = os.getenv("HEADLESS_MODE", "True") == "True"
 
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=headless_mode)  # Ensure headless is set to True
+            # Launch the browser in headless mode
+            browser = p.chromium.launch(headless=headless_mode)  
             context = browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 viewport={"width": 1280, "height": 800},
