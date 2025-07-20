@@ -1,30 +1,80 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from bs4 import BeautifulSoup
-import time
+from datetime import datetime
+from playwright.sync_api import sync_playwright
+import google_sheets
+import os
 
-# Start Selenium WebDriver
-driver = webdriver.Chrome()
-driver.get("https://www.business-standard.com/markets/research-report")
+URL = "https://www.business-standard.com/markets/research-report"
+SHEET_ID = "1QN5GMlxBKMudeHeWF-Kzt9XsqTt01am7vze1wBjvIdE"
+WORKSHEET_NAME = "bis"
 
-# Wait a few seconds for JS to load data
-time.sleep(5)
+def scrape_business_standard():
+    print("🚀 Starting the scraping process...")
 
-# Parse HTML
-html = BeautifulSoup(driver.page_source, 'html.parser')
+    headless_mode = os.getenv("NEW", "True") == "True"
 
-# Find the main table
-table = html.find("table")
-if table:
-    # Get all rows
-    rows = table.find_all("tr")
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=headless_mode)  # Set headless based on environment variable
+            context = browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                viewport={"width": 1280, "height": 800},
+                locale="en-US"
+            )
+            page = context.new_page()
 
-    # Loop through each row and print the text from all cells
-    for row in rows:
-        cells = row.find_all(["td", "th"])  # include headers and data
-        data = [cell.get_text(strip=True) for cell in cells]
-        print(" | ".join(data))
-else:
-    print("Table not found.")
+            # Manual stealth patch
+            page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+            window.navigator.chrome = { runtime: {} };
+            Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+            Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+            """)
 
-driver.quit()
+            page.goto(URL, timeout=60000)
+            
+            print("🌐 Page requested. Waiting fixed time for content...")
+            page.wait_for_timeout(10_000)  # 10 seconds fixed wait
+
+            # ✅ Try waiting for the table to appear
+            try:
+                page.wait_for_selector("table.cmpnydatatable_cmpnydatatable__Cnf6M tbody tr", timeout=30000)
+            except:
+                print("❌ Table not found within timeout.")
+                page.screenshot(path="debug.png")
+                with open("debug.html", "w", encoding="utf-8") as f:
+                    f.write(page.content())
+                browser.close()
+                return
+
+            trs = page.query_selector_all("table.cmpnydatatable_cmpnydatatable__Cnf6M tbody tr")
+
+            if not trs:
+                print("⚠️ No table rows found. Saving screenshot...")
+                page.screenshot(path="final_debug.png")
+                print("📸 Saved final_debug.png. Check it.")
+                browser.close()
+                return
+
+            headers = ["STOCK", "RECOMMENDATION", "TARGET", "BROKER", "DATE"]
+            rows = []
+
+            for tr in trs[:500]:
+                tds = tr.query_selector_all("td")
+                if len(tds) >= 5:
+                    rows.append([td.inner_text().strip() for td in tds[:5]])
+
+            if rows:
+                google_sheets.update_google_sheet_by_name(SHEET_ID, WORKSHEET_NAME, headers, rows)
+                ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                google_sheets.append_footer(SHEET_ID, WORKSHEET_NAME, ["Last updated on:", ts])
+                print(f"✅ Successfully updated {len(rows)} rows.")
+            else:
+                print("⚠️ Table found but no rows extracted.")
+
+            browser.close()
+
+    except Exception as e:
+        print(f"❌ Fatal error: {e}")
+
+if __name__ == "__main__":
+    scrape_business_standard()
