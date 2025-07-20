@@ -1,15 +1,23 @@
-
+import os
+import json
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
-
 def get_google_credentials():
-    creds = ServiceAccountCredentials.from_json_keyfile_name("pags-429207-b6b0c60cd0ce.json", scope)
+    raw_json = os.environ.get("NEW")
+    if not raw_json:
+        raise Exception("Environment variable NEW is not set.")
+    json_dict = json.loads(raw_json)
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(json_dict, scope)
     return creds
 
 def authorize_google_sheets(credentials):
     return gspread.authorize(credentials)
+
+# your existing update_google_sheet_by_name and append_footer functions remain unchanged
+
 
 def update_google_sheet_by_name(sheet_id, worksheet_name, headers, rows):
     try:
@@ -43,4 +51,3 @@ def append_footer(sheet_id, worksheet_name, footer_row):
         print("🕒 Timestamp footer appended.")
     except Exception as e:
         print(f"❌ Footer append error: {e}")
-
