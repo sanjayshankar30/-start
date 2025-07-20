@@ -2,6 +2,7 @@ from datetime import datetime
 from playwright.sync_api import sync_playwright
 import google_sheets
 import os
+
 URL = "https://www.business-standard.com/markets/research-report"
 SHEET_ID = "1QN5GMlxBKMudeHeWF-Kzt9XsqTt01am7vze1wBjvIdE"
 WORKSHEET_NAME = "bis"
@@ -9,11 +10,11 @@ WORKSHEET_NAME = "bis"
 def scrape_business_standard():
     print("🚀 Starting the scraping process...")
 
-    headless_mode = os.getenv("HEADLESS_MODE", "False") == "False"
+    headless_mode = os.getenv("HEADLESS_MODE", "True") == "True"
 
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=headless_mode)  # Set headless based on environment variable
+            browser = p.chromium.launch(headless=headless_mode)  # Ensure headless is set to True
             context = browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 viewport={"width": 1280, "height": 800},
