@@ -2,7 +2,6 @@ from datetime import datetime
 from playwright.sync_api import sync_playwright
 import google_sheets
 import os
-
 URL = "https://www.business-standard.com/markets/research-report"
 SHEET_ID = "1QN5GMlxBKMudeHeWF-Kzt9XsqTt01am7vze1wBjvIdE"
 WORKSHEET_NAME = "bis"
