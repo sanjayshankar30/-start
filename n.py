@@ -1,7 +1,8 @@
+print("business")
 from datetime import datetime
 from playwright.sync_api import sync_playwright
+#from tf_playwright_stealth import stealth_sync  # Uncomment if using stealth
 import google_sheets
-import os
 
 URL = "https://www.business-standard.com/markets/research-report"
 SHEET_ID = "1QN5GMlxBKMudeHeWF-Kzt9XsqTt01am7vze1wBjvIdE"
@@ -10,27 +11,54 @@ WORKSHEET_NAME = "bis"
 def scrape_business_standard():
     print("🚀 Starting the scraping process...")
 
-    # Set headless mode based on environment variable
-    headless_mode = os.getenv("HEADLESS_MODE", "True") == "True"
-
     try:
         with sync_playwright() as p:
-            # Launch the browser in headless mode
-            browser = p.chromium.launch(headless=headless_mode)  
-            context = browser.new_context()
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                viewport={"width": 1280, "height": 800},
+                locale="en-US",
+                extra_http_headers={
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                    "Referer": "https://www.google.com/"
+                }
+            )
             page = context.new_page()
 
-            page.goto(URL, timeout=60000)
-            print("🌐 Page requested. Waiting fixed time for content...")
-            page.wait_for_timeout(10_000)  # 10 seconds fixed wait
+            # Apply stealth patch
+            #stealth_sync(page)
 
-            # Wait for the table to appear
-            page.wait_for_selector("table.cmpnydatatable_cmpnydatatable__Cnf6M tbody tr", timeout=30000)
+            page.goto(URL, timeout=60000, wait_until="networkidle")
+            print("🌐 Page requested. Waiting for table to load...")
+
+            # Check for access denial or CAPTCHA
+            if "Access Denied" in page.title() or "captcha" in page.url:
+                print("🚫 Access blocked or CAPTCHA detected.")
+                page.screenshot(path="access_denied.png", full_page=True)
+                with open("access_denied.html", "w", encoding="utf-8") as f:
+                    f.write(page.content())
+                browser.close()
+                return
+
+            try:
+                page.wait_for_selector("section.section-flex", timeout=3000)
+                page.wait_for_selector("div.flex-70", timeout=3000)
+                page.wait_for_selector("div.section-div corporate-box gl-table no-pad resrchtbl", timeout=3000)
+                page.wait_for_selector("div.tbl-pd", timeout=3000)
+                page.wait_for_selector("table.cmpnydatatable_cmpnydatatable__Cnf6M tbody tr", timeout=90000)
+            except:
+                print("⚠️ Table selector not found. Saving debug info...")
+                page.screenshot(path="debug_screenshot.png", full_page=True)
+                with open("debug_page.html", "w", encoding="utf-8") as f:
+                    f.write(page.content())
+                browser.close()
+                return
 
             trs = page.query_selector_all("table.cmpnydatatable_cmpnydatatable__Cnf6M tbody tr")
-
             if not trs:
-                print("⚠️ No table rows found.")
+                print("⚠️ No table rows found. Saving screenshot...")
+                page.screenshot(path="final_debug.png")
+                browser.close()
                 return
 
             headers = ["STOCK", "RECOMMENDATION", "TARGET", "BROKER", "DATE"]
@@ -54,5 +82,5 @@ def scrape_business_standard():
     except Exception as e:
         print(f"❌ Fatal error: {e}")
 
-if __name__ == "__main__":
-    scrape_business_standard()
+scrape_business_standard()
+print("business")
